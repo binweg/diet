@@ -19,11 +19,22 @@ elif sys.platform == 'win32':
 else:
     appdata = os.path.expanduser(os.path.join("~", "." + appname))
 
+def eat(namespace_object):
+    print(namespace_object)
+
+def remember(namespace_object):
+    print(namespace_object)
+
+# This dictionary associates the methods with the commands from the argparse
+# Namespace object
+command_dispatcher = {'eat': eat, 'remember': remember}
+
 parser = argparse.ArgumentParser(
     description='''diet is a minimalistic calorie tracking program.
         It aims to offer the capabilty of remembering the total calorie
         consumption per day.''')
-subparsers = parser.add_subparsers(title='available commands')
+subparsers = parser.add_subparsers(title='available commands',
+    dest='command')
 
 eat_parser = subparsers.add_parser('eat',
     description='''This command either looks up a given food in the database
@@ -56,5 +67,6 @@ remember_parser.add_argument('description', metavar='DESC', nargs='?',
     help='an optional description')
 
 if __name__ == '__main__':
-    parser.parse_args()
+    args = parser.parse_args()
+    command_dispatcher[args.command](args)
 
