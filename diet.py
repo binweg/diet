@@ -6,6 +6,9 @@ capability of remembering the total calorie consumption per day.
 import argparse
 import sys
 import os
+import collections
+import pickle
+import datetime
 
 # determine path to store application data
 # from http://stackoverflow.com/questions/1084697
@@ -19,11 +22,68 @@ elif sys.platform == 'win32':
 else:
     appdata = os.path.expanduser(os.path.join("~", "." + appname))
 
-def eat(namespace_object):
-    print(namespace_object)
+def ensure_appdata_existence():
+    '''If the appdata directory doesn't exist at call time, create it.
+    '''
+    if not os.path.exists(appdata): os.makedirs(appdata)
 
-def remember(namespace_object):
-    print(namespace_object)
+# These are the paths for the files in which the calories per item of food
+# and the calories per day are stored.
+food_db_filename = os.path.join(appdata, 'food_db')
+calorie_db_filename = os.path.join(appdata, 'calorie_db')
+
+Food = collections.namedtuple('Food', ['calories', 'description'])
+
+def eat(args):
+    '''eat is the method that executes either a lookup for the calories of a
+    named piece of food from the food database or uses the calories provided
+    by the user and adds them (multiplied by the number of portions) to the
+    calorie database for the right day.
+
+    args is an argparse Namespace object.
+    '''
+    # if we have to look the calories up...
+    if args.food:
+        with open(food_db_filename, 'rb') as food_db_file:
+            food_db = pickle.load(food_db_file)
+            # food_db contains dict with Food(namedtuple) values
+            calories_base = food_db[args.food].calories
+    # ...otherwise, we take the user-provided value
+    else:
+        calories_base = args.calories
+    try:
+        with open(calorie_db_filename, 'rb') as calorie_db_file:
+            calorie_db = pickle.load(calorie_db_file)
+    except FileNotFoundError:
+        calorie_db = collections.Counter()
+    day = datetime.date.today()
+    # calories_base times portion size
+    # product will be added to the daily total
+    calories_to_add = calories_base * args.number
+    calorie_db[day] += calories_to_add
+    ensure_appdata_existence()
+    with open(calorie_db_filename, 'wb') as calorie_db_file:
+        pickle.dump(calorie_db, calorie_db_file)
+    # print status _after_ file is written
+    print('Added {:.0f} calories. Daily total: {:.0f}'.format(calories_to_add,
+        calorie_db[day]))
+
+def remember(args):
+    '''remember is the method that stores the calories and the description in
+    form of a Food object in the food database.
+
+    args is an argparse Namespace object.
+    '''
+    food_data = Food(calories=args.calories, description=args.description)
+    try:
+        with open(food_db_filename, 'rb') as food_db_file:
+            food_db = pickle.load(food_db_file)
+    except FileNotFoundError:
+        ensure_appdata_existence()
+        food_db = dict()
+    food_db[args.food] = food_data
+    with open(food_db_filename, 'wb') as food_db_file:
+        pickle.dump(food_db, food_db_file)
 
 # This dictionary associates the methods with the commands from the argparse
 # Namespace object
@@ -47,12 +107,12 @@ eat_parser = subparsers.add_parser('eat',
 choice_group = eat_parser.add_mutually_exclusive_group(required=True)
 choice_group.add_argument('food', nargs='?', metavar='FOOD',
     help='the name of the food to add')
-choice_group.add_argument('-c', metavar='CAL',
+choice_group.add_argument('-c', '--calories', metavar='CAL', type=float,
     help='the number of calories per portion to add, instead of FOOD')
 
 # needs to consider when calorie amount is given per 100g
 # entering weight in grams might be preferred.
-eat_parser.add_argument('-n', metavar='NUM',
+eat_parser.add_argument('-n', '--number', metavar='NUM', type=float, default=1,
     help='the number of times a calorie amount is added')
 
 remember_parser = subparsers.add_parser('remember',
@@ -61,7 +121,7 @@ remember_parser = subparsers.add_parser('remember',
     help='remember the calories of an item of food')
 remember_parser.add_argument('food', metavar='FOOD',
     help='the name of the food to remember')
-remember_parser.add_argument('calories', metavar='CAL',
+remember_parser.add_argument('calories', metavar='CAL', type=float,
     help='the number of calories of that item of food')
 remember_parser.add_argument('description', metavar='DESC', nargs='?',
     help='an optional description')
