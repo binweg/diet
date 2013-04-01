@@ -45,6 +45,8 @@ eat_parser.add_argument('-n', metavar='NUM',
     help='the number of times a calorie amount is added')
 
 remember_parser = subparsers.add_parser('remember',
+    description='''This command stores the given food with it's calories in the
+    database to be later on accessed via the eat command.''',
     help='remember the calories of an item of food')
 remember_parser.add_argument('food', metavar='FOOD',
     help='the name of the food to remember')
