@@ -85,9 +85,39 @@ def remember(args):
     with open(food_db_filename, 'wb') as food_db_file:
         pickle.dump(food_db, food_db_file)
 
+def lookup(args):
+    '''lookup is the method that searches the food database for a food with the
+    provided name and outputs their calories and descriptions.
+
+    args is an argparse Namespace object.
+    '''
+    with open(food_db_filename, 'rb') as food_db_file:
+        food_db = pickle.load(food_db_file)
+    # the length of the longest match, used for formatting
+    max_name_len = 0
+    results = []
+    for food in food_db.keys():
+        if args.search in food:
+            results.append(food)
+            if len(food) > max_name_len:
+                max_name_len = len(food)
+    headerformat = '{{0:<{m}}}  {{1:>5}}  {{2}}'.format(m=max_name_len)
+    tableformat = '{{0:<{m}}}  {{1:>5.0f}}  {{2}}'.format(m=max_name_len)
+    if results:
+        if len(results) == 1:
+            print('Found one match:\n')
+        else:
+            print('Found {} matches:\n'.format(len(results)))
+        for food in sorted(results):
+            food_data = food_db[food]
+            print(tableformat.format(food,
+                food_data.calories, food_data.description))
+    else:
+        print('Found no match.')
+
 # This dictionary associates the methods with the commands from the argparse
 # Namespace object
-command_dispatcher = {'eat': eat, 'remember': remember}
+command_dispatcher = {'eat': eat, 'remember': remember, 'lookup': lookup}
 
 parser = argparse.ArgumentParser(
     description='''diet is a minimalistic calorie tracking program.
@@ -124,7 +154,14 @@ remember_parser.add_argument('food', metavar='FOOD',
 remember_parser.add_argument('calories', metavar='CAL', type=float,
     help='the number of calories of that item of food')
 remember_parser.add_argument('description', metavar='DESC', nargs='?',
-    help='an optional description')
+    help='an optional description', default='')
+
+lookup_parser = subparsers.add_parser('lookup',
+    description='''This command let's you look up a piece of food in the
+    database and report it's calories and the associated description.''',
+    help='look up piece of food in the database')
+lookup_parser.add_argument('search', metavar='STRING',
+    help='the string to look for')
 
 if __name__ == '__main__':
     args = parser.parse_args()
