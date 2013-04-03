@@ -34,6 +34,12 @@ calorie_db_filename = os.path.join(appdata, 'calorie_db')
 
 Food = collections.namedtuple('Food', ['calories', 'description'])
 
+def get_food_db():
+    '''reads the food database file from disk and returns the database
+    '''
+    with open(food_db_filename, 'rb') as food_db_file:
+        return pickle.load(food_db_file)
+
 def eat(args):
     '''eat is the method that executes either a lookup for the calories of a
     named piece of food from the food database or uses the calories provided
@@ -44,10 +50,9 @@ def eat(args):
     '''
     # if we have to look the calories up...
     if args.food:
-        with open(food_db_filename, 'rb') as food_db_file:
-            food_db = pickle.load(food_db_file)
-            # food_db contains dict with Food(namedtuple) values
-            calories_base = food_db[args.food].calories
+        food_db = get_food_db()
+        # food_db contains dict with Food(namedtuple) values
+        calories_base = food_db[args.food].calories
     # ...otherwise, we take the user-provided value
     else:
         calories_base = args.calories
@@ -76,8 +81,7 @@ def remember(args):
     '''
     food_data = Food(calories=args.calories, description=args.description)
     try:
-        with open(food_db_filename, 'rb') as food_db_file:
-            food_db = pickle.load(food_db_file)
+        food_db = get_food_db()
     except FileNotFoundError:
         ensure_appdata_existence()
         food_db = dict()
@@ -91,8 +95,7 @@ def lookup(args):
 
     args is an argparse Namespace object.
     '''
-    with open(food_db_filename, 'rb') as food_db_file:
-        food_db = pickle.load(food_db_file)
+    food_db = get_food_db()
     # the length of the longest match, used for formatting
     max_name_len = 0
     results = []
