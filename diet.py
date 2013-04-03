@@ -99,8 +99,17 @@ def lookup(args):
     # the length of the longest match, used for formatting
     max_name_len = 0
     results = []
+    if args.exact:
+        def check_for_match(query):
+            if args.search == query: return True
+            return False
+    else:
+        search_lower = args.search.lower()
+        def check_for_match(query):
+            if search_lower in query.lower(): return True
+            return False
     for food in food_db.keys():
-        if args.search in food:
+        if check_for_match(food):
             results.append(food)
             if len(food) > max_name_len:
                 max_name_len = len(food)
@@ -163,6 +172,8 @@ lookup_parser = subparsers.add_parser('lookup',
     description='''This command let's you look up a piece of food in the
     database and report it's calories and the associated description.''',
     help='look up piece of food in the database')
+lookup_parser.add_argument('-e', '--exact', action='store_true',
+    help='only look for one result that matches the search string exactly')
 lookup_parser.add_argument('search', metavar='STRING',
     help='the string to look for')
 
