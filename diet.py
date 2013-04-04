@@ -100,19 +100,19 @@ def lookup(args):
     max_name_len = 0
     results = []
     if args.exact:
-        def check_for_match(query):
-            if args.search == query: return True
-            return False
+        if args.search in food_db:
+            results = [args.search]
+            max_name_len = len(args.search)
     else:
         search_lower = args.search.lower()
         def check_for_match(query):
             if search_lower in query.lower(): return True
             return False
-    for food in food_db.keys():
-        if check_for_match(food):
-            results.append(food)
-            if len(food) > max_name_len:
-                max_name_len = len(food)
+        for food in food_db.keys():
+            if check_for_match(food):
+                results.append(food)
+                if len(food) > max_name_len:
+                    max_name_len = len(food)
     headerformat = '{{0:<{m}}}  {{1:>5}}  {{2}}'.format(m=max_name_len)
     tableformat = '{{0:<{m}}}  {{1:>5.0f}}  {{2}}'.format(m=max_name_len)
     if results:
