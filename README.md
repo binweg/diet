@@ -17,21 +17,19 @@ To add a piece of food to the database, use the `remember` command:
 
 Once this piece of food is stored, it's calories can be added with the `eat` command:
 
-    ./diet.py eat Cereal
-
+    ./diet.py eat cereal
     Added 683 calories. Daily total: 683
 
 If you don't want to permanently store some food, it's calories can be added directly with the `-c`/`--calories` flag:
 
     ./diet.py eat -c 105
-
     Added 105 calories. Daily total: 788
 
 To set yourself a calorie goal, use the `set` command:
 
     ./diet.py set 2900
-    ./diet.py eat apple
 
+    ./diet.py eat apple
     Added 91 calories. Daily total: 879
     30% of targeted 2900 calories
 
