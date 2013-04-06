@@ -15,8 +15,10 @@ import datetime
 appname = 'diet'
 if sys.platform == 'darwin':
     from AppKit import NSSearchPathForDirectoriesInDomains
-    appdata = os.path.join(NSSearchPathForDirectoriesInDomains(14, 1, True)[0],
-        appname)
+    appdata = os.path.join(
+        NSSearchPathForDirectoriesInDomains(14, 1, True)[0],
+        appname,
+        )
 elif sys.platform == 'win32':
     appdata = os.path.join(os.environ['APPDATA'], appname)
 else:
@@ -70,8 +72,12 @@ def eat(args):
     with open(calorie_db_filename, 'wb') as calorie_db_file:
         pickle.dump(calorie_db, calorie_db_file)
     # print status _after_ file is written
-    print('Added {:.0f} calories. Daily total: {:.0f}'.format(calories_to_add,
-        calorie_db[day]))
+    print(
+        'Added {:.0f} calories. Daily total: {:.0f}'.format(
+            calories_to_add,
+            calorie_db[day],
+            )
+        )
 
 def remember(args):
     '''remember is the method that stores the calories and the description in
@@ -134,48 +140,88 @@ command_dispatcher = {'eat': eat, 'remember': remember, 'lookup': lookup}
 parser = argparse.ArgumentParser(
     description='''diet is a minimalistic calorie tracking program.
         It aims to offer the capabilty of remembering the total calorie
-        consumption per day.''')
-subparsers = parser.add_subparsers(title='available commands',
-    dest='command')
+        consumption per day.''',
+    )
+subparsers = parser.add_subparsers(
+    title='available commands',
+    dest='command',
+    )
 
-eat_parser = subparsers.add_parser('eat',
+eat_parser = subparsers.add_parser(
+    'eat',
     description='''This command either looks up a given food in the database
         and adds it's calories to the daily total or adds the directly given
         amount of calories.''',
     usage='%(prog)s [-h] ([-c CAL] | FOOD)',
-    help='add calories to the daily calorie count')
+    help='add calories to the daily calorie count',
+    )
 
 # either enter number of calories or food name:
 choice_group = eat_parser.add_mutually_exclusive_group(required=True)
-choice_group.add_argument('food', nargs='?', metavar='FOOD',
-    help='the name of the food to add')
-choice_group.add_argument('-c', '--calories', metavar='CAL', type=float,
-    help='the number of calories per portion to add, instead of FOOD')
+choice_group.add_argument(
+    'food',
+    nargs='?',
+    metavar='FOOD',
+    help='the name of the food to add',
+    )
+choice_group.add_argument(
+    '-c', '--calories',
+    metavar='CAL',
+    type=float,
+    help='the number of calories per portion to add, instead of FOOD',
+    )
 
 # needs to consider when calorie amount is given per 100g
 # entering weight in grams might be preferred.
-eat_parser.add_argument('-n', '--number', metavar='NUM', type=float, default=1,
-    help='the number of times a calorie amount is added')
+eat_parser.add_argument(
+    '-n', '--number',
+    metavar='NUM',
+    type=float,
+    default=1,
+    help='the number of times a calorie amount is added',
+    )
 
-remember_parser = subparsers.add_parser('remember',
+remember_parser = subparsers.add_parser(
+    'remember',
     description='''This command stores the given food with it's calories in the
-    database to be later on accessed via the eat command.''',
-    help='remember the calories of an item of food')
-remember_parser.add_argument('food', metavar='FOOD',
-    help='the name of the food to remember')
-remember_parser.add_argument('calories', metavar='CAL', type=float,
-    help='the number of calories of that item of food')
-remember_parser.add_argument('description', metavar='DESC', nargs='?',
-    help='an optional description', default='')
+        database to be later on accessed via the eat command.''',
+    help='remember the calories of an item of food',
+    )
+remember_parser.add_argument(
+    'food',
+    metavar='FOOD',
+    help='the name of the food to remember',
+    )
+remember_parser.add_argument(
+    'calories',
+    metavar='CAL',
+    type=float,
+    help='the number of calories of that item of food',
+    )
+remember_parser.add_argument(
+    'description',
+    metavar='DESC',
+    nargs='?',
+    help='an optional description',
+    default='',
+    )
 
-lookup_parser = subparsers.add_parser('lookup',
+lookup_parser = subparsers.add_parser(
+    'lookup',
     description='''This command let's you look up a piece of food in the
-    database and report it's calories and the associated description.''',
-    help='look up piece of food in the database')
-lookup_parser.add_argument('-e', '--exact', action='store_true',
-    help='only look for one result that matches the search string exactly')
-lookup_parser.add_argument('search', metavar='STRING',
-    help='the string to look for')
+        database and report it's calories and the associated description.''',
+    help='look up piece of food in the database',
+    )
+lookup_parser.add_argument(
+    '-e', '--exact',
+    action='store_true',
+    help='only look for one result that matches the search string exactly',
+    )
+lookup_parser.add_argument(
+    'search',
+    metavar='STRING',
+    help='the string to look for',
+    )
 
 if __name__ == '__main__':
     args = parser.parse_args()
