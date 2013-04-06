@@ -33,6 +33,7 @@ def ensure_appdata_existence():
 # and the calories per day are stored.
 food_db_filename = os.path.join(appdata, 'food_db')
 calorie_db_filename = os.path.join(appdata, 'calorie_db')
+user_db_filename = os.path.join(appdata, 'user_db')
 
 Food = collections.namedtuple('Food', ['calories', 'description'])
 
@@ -41,6 +42,12 @@ def get_food_db():
     '''
     with open(food_db_filename, 'rb') as food_db_file:
         return pickle.load(food_db_file)
+
+def get_user_db():
+    '''reads the user database file from disk and returns the database
+    '''
+    with open(user_db_filename, 'rb') as user_db_file:
+        return pickle.load(user_db_file)
 
 def eat(args):
     '''eat is the method that executes either a lookup for the calories of a
@@ -72,12 +79,21 @@ def eat(args):
     with open(calorie_db_filename, 'wb') as calorie_db_file:
         pickle.dump(calorie_db, calorie_db_file)
     # print status _after_ file is written
-    print(
-        'Added {:.0f} calories. Daily total: {:.0f}'.format(
-            calories_to_add,
-            calorie_db[day],
-            )
+    message = 'Added {:.0f} calories. Daily total: {:.0f}'.format(
+        calories_to_add,
+        calorie_db[day],
         )
+    print(message)
+    try:
+        user_db = get_user_db()
+    except FileNotFoundError:
+        user_db = dict()
+    if 'target' in user_db:
+        message = '{:.0%} of targeted {:.0f} calories'.format(
+            calorie_db[day] / user_db['target'],
+            user_db['target'],
+            )
+        print(message)
 
 def remember(args):
     '''remember is the method that stores the calories and the description in
@@ -115,10 +131,10 @@ def lookup(args):
             if search_lower in query.lower(): return True
             return False
         for food in food_db.keys():
-            if check_for_match(food):
-                results.append(food)
-                if len(food) > max_name_len:
-                    max_name_len = len(food)
+            if not check_for_match(food): continue
+            results.append(food)
+            if len(food) > max_name_len:
+                max_name_len = len(food)
     headerformat = '{{0:<{m}}}  {{1:>5}}  {{2}}'.format(m=max_name_len)
     tableformat = '{{0:<{m}}}  {{1:>5.0f}}  {{2}}'.format(m=max_name_len)
     if results:
@@ -133,9 +149,30 @@ def lookup(args):
     else:
         print('Found no match.')
 
+def user_set(args):
+    '''set values of personal variables and store into user database.
+    '''
+    if args.target:
+        try:
+            user_db = get_user_db()
+        except FileNotFoundError:
+            ensure_appdata_existence()
+            user_db = dict()
+        user_db['target'] = args.target
+        # don't let target produce zero division
+        if args.target == 0:
+            del user_db['target']
+        with open(user_db_filename, 'wb') as user_db_file:
+            pickle.dump(user_db, user_db_file)
+
 # This dictionary associates the methods with the commands from the argparse
 # Namespace object
-command_dispatcher = {'eat': eat, 'remember': remember, 'lookup': lookup}
+command_dispatcher = {
+    'eat': eat,
+    'remember': remember,
+    'lookup': lookup,
+    'set': user_set,
+    }
 
 parser = argparse.ArgumentParser(
     description='''diet is a minimalistic calorie tracking program.
@@ -221,6 +258,20 @@ lookup_parser.add_argument(
     'search',
     metavar='STRING',
     help='the string to look for',
+    )
+
+set_parser = subparsers.add_parser(
+    'set',
+    description='''This command let's you store values for personal parameters.
+        They will be considered in the status message to be printed after
+        invocation of the `eat` command.''',
+    help='set personal parameters of which later status messages depend upon',
+    )
+set_parser.add_argument(
+    'target',
+    metavar='TARGET',
+    type=float,
+    help='the targeted total amount of calories per day',
     )
 
 if __name__ == '__main__':
