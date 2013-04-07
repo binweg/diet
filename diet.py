@@ -147,7 +147,7 @@ eat_parser = subparsers.add_parser(
     description='''This command either looks up a given food in the database
         and adds it's calories to the daily total or adds the directly given
         amount of calories.''',
-    usage='%(prog)s [-h] ([-c CAL] | FOOD)',
+    usage='%(prog)s [-h] [-n NUM] ([-c CAL] | FOOD)',
     help='add calories to the daily calorie count',
     )
 
