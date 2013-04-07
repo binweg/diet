@@ -4,50 +4,12 @@ capability of remembering the total calorie consumption per day.
 '''
 
 import argparse
-import sys
-import os
 import collections
-import pickle
 import datetime
 
-# determine path to store application data
-# from http://stackoverflow.com/questions/1084697
-appname = 'diet'
-if sys.platform == 'darwin':
-    from AppKit import NSSearchPathForDirectoriesInDomains
-    appdata = os.path.join(
-        NSSearchPathForDirectoriesInDomains(14, 1, True)[0],
-        appname,
-        )
-elif sys.platform == 'win32':
-    appdata = os.path.join(os.environ['APPDATA'], appname)
-else:
-    appdata = os.path.expanduser(os.path.join("~", "." + appname))
-
-def ensure_appdata_existence():
-    '''If the appdata directory doesn't exist at call time, create it.
-    '''
-    if not os.path.exists(appdata): os.makedirs(appdata)
-
-# These are the paths for the files in which the calories per item of food
-# and the calories per day are stored.
-food_db_filename = os.path.join(appdata, 'food_db')
-calorie_db_filename = os.path.join(appdata, 'calorie_db')
-user_db_filename = os.path.join(appdata, 'user_db')
+import database_io
 
 Food = collections.namedtuple('Food', ['calories', 'description'])
-
-def get_food_db():
-    '''reads the food database file from disk and returns the database
-    '''
-    with open(food_db_filename, 'rb') as food_db_file:
-        return pickle.load(food_db_file)
-
-def get_user_db():
-    '''reads the user database file from disk and returns the database
-    '''
-    with open(user_db_filename, 'rb') as user_db_file:
-        return pickle.load(user_db_file)
 
 def eat(args):
     '''eat is the method that executes either a lookup for the calories of a
@@ -59,15 +21,14 @@ def eat(args):
     '''
     # if we have to look the calories up...
     if args.food:
-        food_db = get_food_db()
+        food_db = database_io.get_db('food')
         # food_db contains dict with Food(namedtuple) values
         calories_base = food_db[args.food].calories
     # ...otherwise, we take the user-provided value
     else:
         calories_base = args.calories
     try:
-        with open(calorie_db_filename, 'rb') as calorie_db_file:
-            calorie_db = pickle.load(calorie_db_file)
+        calorie_db = database_io.get_db('calorie')
     except FileNotFoundError:
         calorie_db = collections.Counter()
     day = datetime.date.today()
@@ -75,9 +36,8 @@ def eat(args):
     # product will be added to the daily total
     calories_to_add = calories_base * args.number
     calorie_db[day] += calories_to_add
-    ensure_appdata_existence()
-    with open(calorie_db_filename, 'wb') as calorie_db_file:
-        pickle.dump(calorie_db, calorie_db_file)
+    database_io.ensure_appdata_existence()
+    database_io.put_db('calorie', calorie_db)
     # print status _after_ file is written
     message = 'Added {:.0f} calories. Daily total: {:.0f}'.format(
         calories_to_add,
@@ -85,7 +45,7 @@ def eat(args):
         )
     print(message)
     try:
-        user_db = get_user_db()
+        user_db = database_io.get_db('user')
     except FileNotFoundError:
         user_db = dict()
     if 'target' in user_db:
@@ -103,13 +63,12 @@ def remember(args):
     '''
     food_data = Food(calories=args.calories, description=args.description)
     try:
-        food_db = get_food_db()
+        food_db = database_io.get_db('food')
     except FileNotFoundError:
-        ensure_appdata_existence()
+        database_io.ensure_appdata_existence()
         food_db = dict()
     food_db[args.food] = food_data
-    with open(food_db_filename, 'wb') as food_db_file:
-        pickle.dump(food_db, food_db_file)
+    database_io.put_db('food', food_db)
 
 def lookup(args):
     '''lookup is the method that searches the food database for a food with the
@@ -117,7 +76,7 @@ def lookup(args):
 
     args is an argparse Namespace object.
     '''
-    food_db = get_food_db()
+    food_db = database_io.get_db('food')
     # the length of the longest match, used for formatting
     max_name_len = 0
     results = []
@@ -152,18 +111,17 @@ def lookup(args):
 def user_set(args):
     '''set values of personal variables and store into user database.
     '''
-    if args.target:
+    if not args.target is None:
         try:
-            user_db = get_user_db()
+            user_db = database_io.get_db('user')
         except FileNotFoundError:
-            ensure_appdata_existence()
+            database_io.ensure_appdata_existence()
             user_db = dict()
         user_db['target'] = args.target
         # don't let target produce zero division
         if args.target == 0:
             del user_db['target']
-        with open(user_db_filename, 'wb') as user_db_file:
-            pickle.dump(user_db, user_db_file)
+        database_io.put_db('user', user_db)
 
 # This dictionary associates the methods with the commands from the argparse
 # Namespace object
