@@ -31,7 +31,7 @@ def eat(args):
         calorie_db = database_io.get_db('calorie')
     except FileNotFoundError:
         calorie_db = collections.Counter()
-    day = datetime.date.today()
+    day = datetime.date.today() - datetime.timedelta(days=args.yesterday)
     # calories_base times portion size
     # product will be added to the daily total
     calories_to_add = calories_base * args.number
@@ -39,8 +39,13 @@ def eat(args):
     database_io.ensure_appdata_existence()
     database_io.put_db('calorie', calorie_db)
     # print status _after_ file is written
-    message = 'Added {:.0f} calories. Daily total: {:.0f}'.format(
+    dayformat = {
+        0: 'today',
+        1: 'yesterday',
+        }
+    message = 'Added {:.0f} calories for {}. Daily total: {:.0f}'.format(
         calories_to_add,
+        dayformat.get(args.yesterday, day.strftime('%A, %Y-%m-%d')),
         calorie_db[day],
         )
     print(message)
@@ -147,7 +152,7 @@ eat_parser = subparsers.add_parser(
     description='''This command either looks up a given food in the database
         and adds it's calories to the daily total or adds the directly given
         amount of calories.''',
-    usage='%(prog)s [-h] [-n NUM] ([-c CAL] | FOOD)',
+    usage='%(prog)s [-h] [-y] [-n NUM] {[-c CAL] | FOOD}',
     help='add calories to the daily calorie count',
     )
 
@@ -174,6 +179,13 @@ eat_parser.add_argument(
     type=float,
     default=1,
     help='the number of times a calorie amount is added',
+    )
+eat_parser.add_argument(
+    '-y', '--yesterday',
+    action='count',
+    default=0,
+    help='''add the calories to yesterday's instead of today's count.
+        Can be repeated to address earlier days.''',
     )
 
 remember_parser = subparsers.add_parser(
