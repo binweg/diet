@@ -75,6 +75,13 @@ def remember(args):
     food_db[args.food] = food_data
     database_io.put_db('food', food_db)
 
+def forget(args):
+    '''forget removes a given item from the food database.
+    '''
+    food_db = database_io.get_db('food')
+    del food_db[args.food]
+    database_io.put_db('food', food_db)
+
 def lookup(args):
     '''lookup is the method that searches the food database for a food with the
     provided name and outputs their calories and descriptions.
@@ -133,6 +140,7 @@ def user_set(args):
 command_dispatcher = {
     'eat': eat,
     'remember': remember,
+    'forget': forget,
     'lookup': lookup,
     'set': user_set,
     }
@@ -211,6 +219,18 @@ remember_parser.add_argument(
     nargs='?',
     help='an optional description',
     default='',
+    )
+
+forget_parser = subparsers.add_parser(
+    'forget',
+    description='''This command lets you remove a piece of food from the food
+        database.''',
+    help='remove food from database',
+    )
+forget_parser.add_argument(
+    'food',
+    metavar='FOOD',
+    help='the name of the food to remove',
     )
 
 lookup_parser = subparsers.add_parser(
