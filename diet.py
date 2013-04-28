@@ -11,6 +11,27 @@ import database_io
 
 Food = collections.namedtuple('Food', ['calories', 'description'])
 
+def search_case_insensitive_food(food, food_db, include_len=False):
+    '''search food_db for keys that contain 'food'.
+    If include_len is True, return a tuple with the second entry being the
+    length of the longest match.
+    '''
+    search_lower = args.food.lower()
+    def check_for_match(query):
+        if search_lower in query.lower(): return True
+        return False
+    results = []
+    max_name_len = 0
+    for food in food_db.keys():
+        if not check_for_match(food): continue
+        results.append(food)
+        if len(food) > max_name_len:
+            max_name_len = len(food)
+    if include_len:
+        return (results, max_name_len)
+    return results
+
+
 def eat(args):
     '''eat is the method that executes either a lookup for the calories of a
     named piece of food from the food database or uses the calories provided
@@ -23,7 +44,24 @@ def eat(args):
     if args.food:
         food_db = database_io.get_db('food')
         # food_db contains dict with Food(namedtuple) values
-        calories_base = food_db[args.food].calories
+        try:
+            calories_base = food_db[args.food].calories
+        except KeyError:
+            results = search_case_insensitive_food(
+                args.food,
+                food_db,
+                include_len=False
+                )
+            if len(results) == 1:
+                message = (
+                    "No match for '{}', but found '{}'. Using this instead."
+                        .format(args.food, results[0]))
+                print(message)
+                calories_base = food_db[results[0]].calories
+            else:
+                print("Could not find '{}' in the food database."
+                    .format(args.food))
+                return
     # ...otherwise, we take the user-provided value
     else:
         calories_base = args.calories
@@ -90,22 +128,16 @@ def lookup(args):
     '''
     food_db = database_io.get_db('food')
     # the length of the longest match, used for formatting
-    max_name_len = 0
-    results = []
     if args.exact:
-        if args.search in food_db:
-            results = [args.search]
-            max_name_len = len(args.search)
+        if args.food in food_db:
+            results = [args.food]
+            max_name_len = len(args.food)
     else:
-        search_lower = args.search.lower()
-        def check_for_match(query):
-            if search_lower in query.lower(): return True
-            return False
-        for food in food_db.keys():
-            if not check_for_match(food): continue
-            results.append(food)
-            if len(food) > max_name_len:
-                max_name_len = len(food)
+        (results, max_name_len) = search_case_insensitive_food(
+            args.food,
+            food_db,
+            include_len=True,
+            )
     headerformat = '{{0:<{m}}}  {{1:>5}}  {{2}}'.format(m=max_name_len)
     tableformat = '{{0:<{m}}}  {{1:>5.0f}}  {{2}}'.format(m=max_name_len)
     if results:
@@ -245,7 +277,7 @@ lookup_parser.add_argument(
     help='only look for one result that matches the search string exactly',
     )
 lookup_parser.add_argument(
-    'search',
+    'food',
     metavar='STRING',
     help='the string to look for',
     )
