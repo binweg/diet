@@ -31,6 +31,44 @@ def search_case_insensitive_food(food, food_db, include_len=False):
         return (results, max_name_len)
     return results
 
+def print_status(total, date_offset, day, added=None):
+    dayformat = {
+        0: 'today',
+        1: 'yesterday',
+        }
+    if added is None:
+        format_string = 'Daily total for {day}: {total}'
+    else:
+        format_string = ('Added {added:.0f} calories for {day}. '
+            + 'Daily total: {total:.0f}')
+    message = format_string.format(
+        added=added,
+        day=dayformat.get(date_offset, day.strftime('%A, %Y-%m-%d')),
+        total=total,
+        )
+    print(message)
+    try:
+        user_db = database_io.get_db('user')
+    except FileNotFoundError:
+        user_db = dict()
+    if 'target' in user_db:
+        target = user_db['target']
+        message = '{:.0%} of targeted {:.0f} calories'.format(
+            total / target,
+            target,
+            )
+        print(message)
+
+def status(args):
+    '''print the user's calories.
+    '''
+    calorie_db = database_io.get_db('calorie')
+    day = datetime.date.today() - datetime.timedelta(days=args.yesterday)
+    print_status(
+        total=calorie_db[day],
+        date_offset=args.yesterday,
+        day=day,
+        )
 
 def eat(args):
     '''eat is the method that executes either a lookup for the calories of a
@@ -77,26 +115,12 @@ def eat(args):
     database_io.ensure_appdata_existence()
     database_io.put_db('calorie', calorie_db)
     # print status _after_ file is written
-    dayformat = {
-        0: 'today',
-        1: 'yesterday',
-        }
-    message = 'Added {:.0f} calories for {}. Daily total: {:.0f}'.format(
-        calories_to_add,
-        dayformat.get(args.yesterday, day.strftime('%A, %Y-%m-%d')),
-        calorie_db[day],
+    print_status(
+        total=calorie_db[day],
+        date_offset=args.yesterday,
+        day=day,
+        added=calories_to_add,
         )
-    print(message)
-    try:
-        user_db = database_io.get_db('user')
-    except FileNotFoundError:
-        user_db = dict()
-    if 'target' in user_db:
-        message = '{:.0%} of targeted {:.0f} calories'.format(
-            calorie_db[day] / user_db['target'],
-            user_db['target'],
-            )
-        print(message)
 
 def remember(args):
     '''remember is the method that stores the calories and the description in
@@ -175,6 +199,7 @@ command_dispatcher = {
     'forget': forget,
     'lookup': lookup,
     'set': user_set,
+    'status': status,
     }
 
 parser = argparse.ArgumentParser(
@@ -251,6 +276,20 @@ remember_parser.add_argument(
     nargs='?',
     help='an optional description',
     default='',
+    )
+
+status_parser = subparsers.add_parser(
+    'status',
+    description='''This command shows you how many calories you've consumed
+        already.''',
+    help="show how many calories you've consumed",
+    )
+status_parser.add_argument(
+    '-y', '--yesterday',
+    action='count',
+    default=0,
+    help='''show calories for yesterday instead of today.
+        Can be repeated to address earlier days.''',
     )
 
 forget_parser = subparsers.add_parser(
