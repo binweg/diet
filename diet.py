@@ -31,6 +31,19 @@ def search_case_insensitive_food(food, food_db, include_len=False):
         return (results, max_name_len)
     return results
 
+def print_bar(total, target):
+    display_area = 80
+    if total < target:
+        barwidth = display_area
+        fillwidth = round(display_area*total/target)
+    else:
+        barwidth = round(target/total*display_area)
+        fillwidth = display_area
+    print(' ' + '-'*(barwidth-2) + ' ')
+    bar = '='*fillwidth + ' '*(display_area-fillwidth)
+    print('|' + bar[:barwidth-2] + '|' + bar[barwidth:])
+    print(' ' + '-'*(barwidth-2) + ' ')
+
 def print_status(total, date_offset, day, added=None):
     dayformat = {
         0: 'today',
@@ -58,6 +71,7 @@ def print_status(total, date_offset, day, added=None):
             target,
             )
         print(message)
+        print_bar(total, target)
 
 def status(args):
     '''print the user's calories.
