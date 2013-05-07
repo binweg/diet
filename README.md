@@ -32,4 +32,7 @@ To set yourself a calorie goal, use the `set` command:
     ./diet.py eat apple
     Added 91 calories. Daily total: 879
     30% of targeted 2900 calories
+     ------------------------------------------------------------------------------
+    |========================                                                      |
+     ------------------------------------------------------------------------------
 

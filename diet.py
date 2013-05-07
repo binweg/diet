@@ -31,8 +31,11 @@ def search_case_insensitive_food(food, food_db, include_len=False):
         return (results, max_name_len)
     return results
 
-def print_bar(total, target):
-    display_area = 80
+def print_bar(total, target, display_area=80):
+    '''print a progress bar that shows how many calories have been eaten.
+    If the total is larger than the target, the border will be drawn shorter
+    to maintain all proportions and the overall width of the bar.
+    '''
     if total < target:
         barwidth = display_area
         fillwidth = round(display_area*total/target)
