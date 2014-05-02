@@ -1,51 +1,79 @@
+import json
 import sys
 import os
-import pickle
 
-# determine path to store application data
-# from http://stackoverflow.com/questions/1084697
-appname = 'diet'
-if sys.platform == 'darwin':
-    from AppKit import NSSearchPathForDirectoriesInDomains
-    appdata = os.path.join(
-        NSSearchPathForDirectoriesInDomains(14, 1, True)[0],
-        appname,
+
+def get_suggested_dir():
+    """
+    Determine the default directory to store application data.
+
+    from http://stackoverflow.com/questions/1084697
+    """
+    app_name = 'diet'
+    if sys.platform == 'darwin':
+        from AppKit import NSSearchPathForDirectoriesInDomains
+        appdata_dir = os.path.join(
+            NSSearchPathForDirectoriesInDomains(14, 1, True)[0],
+            app_name,
         )
-elif sys.platform == 'win32':
-    appdata = os.path.join(os.environ['APPDATA'], appname)
-else:
-    appdata = os.path.expanduser(os.path.join("~", "." + appname))
+    elif sys.platform == 'win32':
+        appdata_dir = os.path.join(os.environ['APPDATA'], app_name)
+    else:
+        appdata_dir = os.path.expanduser(os.path.join("~", "." + app_name))
+    return appdata_dir
 
-def ensure_appdata_existence():
-    '''If the appdata directory doesn't exist at call time, create it.
-    '''
-    if not os.path.exists(appdata): os.makedirs(appdata)
 
-# These are the paths for the files in which the calories per item of food
-# and the calories per day are stored.
-food_db_filename = os.path.join(appdata, 'food_db')
-calorie_db_filename = os.path.join(appdata, 'calorie_db')
-user_db_filename = os.path.join(appdata, 'user_db')
+class DB:
+    """
+    Database class with json read/write ability
 
-db_map = {
-    'food': food_db_filename,
-    'calorie': calorie_db_filename,
-    'user': user_db_filename,
-    }
+    No insert/query/etc. methods, only access to self.data
+    """
 
-def get_db(spec):
-    '''reads the appropriate database file and returns the database
+    def __init__(self, directory='default', file='db.json'):
+        """
+        Create a database instance that reads a json file from disk
+        and provides access the underlying dictionary.
+        """
+        self.data = {
+            'food': {},
+            'calories': {},
+            'user': {},
+            }
 
-    spec is the type of database to return: food, calorie or user
-    '''
-    with open(db_map[spec], 'rb') as db_file:
-        return pickle.load(db_file)
+        if directory == 'default':
+            self._directory = get_suggested_dir()
+            self._path = os.path.join(get_suggested_dir(), file)
+        else:
+            self._path = os.path.join(directory, file)
 
-def put_db(spec, database):
-    '''stores the database into the appropriate database file
+        self._read_data()
 
-    spec is the type of database: food, calorie or user
-    '''
-    with open(db_map[spec], 'wb') as db_file:
-        pickle.dump(database, db_file)
+    def _read_data(self):
+        """
+        Read the data from the json file and cache it locally.
+        """
+        try:
+            with open(self._path, 'r') as json_file:
+                self.data = json.load(json_file)
+        except FileNotFoundError:
+            pass
 
+    def write_data(self):
+        """
+        Write the cached data into the json file.
+        """
+        if not os.path.exists(self._directory):
+            os.makedirs(self._directory)
+
+        with open(self._path, 'w') as json_file:
+            json.dump(self.data, json_file, sort_keys=True, indent=4)
+
+
+def to_key(date):
+    """
+    Turn a datetime object into the string representation
+    so that it can be stored as a json key.
+    """
+    day_format = '%Y-%m-%d'
+    return date.strftime(day_format)

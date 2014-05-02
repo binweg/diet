@@ -4,7 +4,7 @@
 
 * doesn't use an prepopulated database of foods, which are of little use if the database language doesn't match the preferred language.
 * allows fast definition of items without the need to first define the calorie amount per 100g if you happen to know how much calories a different portion has.
-* has no long page load times that seem to be unapproriate considering the small size of information that you try to enter.
+* has no long page load times that seem to be inappropriate considering the small size of information that you try to enter.
 
 Finding the correct number of calories for some food is left to the user. If they can't be deferred from the packaging I recommend a lookup via [Wolfram|Alpha](http://www.wolframalpha.com) which provides a fast interface with little overhead. Wolfram|Alpha can be used to easily find a rough approximation for a [calorie goal](http://www.wolframalpha.com/input/?i=energy+expenditure).
 
