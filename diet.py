@@ -45,7 +45,7 @@ def print_status(total, date_offset, day, added=None):
         1: 'yesterday',
         }
     if added is None:
-        format_string = 'Daily total for {day}: {total}'
+        format_string = 'Daily total for {day}: {total:.0f}'
     else:
         format_string = ('Added {added:.0f} calories for {day}. '
                          + 'Daily total: {total:.0f}')
