@@ -54,7 +54,7 @@ class DB:
         Read the data from the json file and cache it locally.
         """
         try:
-            with open(self._path, 'r') as json_file:
+            with open(self._path, 'r', encoding='utf-8') as json_file:
                 self.data = json.load(json_file)
         except FileNotFoundError:
             pass
@@ -66,8 +66,13 @@ class DB:
         if not os.path.exists(self._directory):
             os.makedirs(self._directory)
 
-        with open(self._path, 'w') as json_file:
-            json.dump(self.data, json_file, sort_keys=True, indent=4)
+        with open(self._path, 'w', encoding='utf-8') as json_file:
+            json.dump(self.data,
+                      json_file,
+                      sort_keys=True,
+                      indent=4,
+                      ensure_ascii=False,
+                      )
 
 
 def to_key(date):
