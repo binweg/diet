@@ -104,7 +104,7 @@ def eat(args):
             else:
                 print("Could not find '{}' in the food database."
                       .format(args.food))
-                return
+                sys.exit(1)
     # ...otherwise, we take the user-provided value
     else:
         calories_base = args.calories
@@ -147,9 +147,12 @@ def forget(args):
     """
     forget removes a given item from the food database.
     """
-    if args.food in db.data['food']:
+    try:
         del db.data['food'][args.food]
         db.write_data()
+    except KeyError:
+        print('Found no match.')
+        sys.exit(1)
 
 
 def lookup(args):
@@ -189,12 +192,11 @@ def user_set(args):
     """
     set values of personal variables and store into user database.
     """
-    if not args.target is None:
-        db.data['user']['target'] = args.target
-        # don't let target produce zero division
-        if args.target == 0:
-            del db.data['user']['target']
-        db.write_data()
+    db.data['user']['target'] = args.target
+    # don't let target produce zero division
+    if args.target == 0:
+        del db.data['user']['target']
+    db.write_data()
 
 # This dictionary associates the methods with the commands from the argparse
 # Namespace object
